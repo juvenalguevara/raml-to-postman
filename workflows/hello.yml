@@ -1,0 +1,9 @@
+name: Hello
+on: push
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Runner OS is $RUNNER_OS"
+      - run: pwd && ls -la
+      - run: node --version && java -version
