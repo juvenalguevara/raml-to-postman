@@ -1,4 +1,5 @@
-name: raml-postman
+name: RAML → Postman
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
@@ -10,6 +11,7 @@ on:
     paths:
       - 'src/main/resources/api/**'
 
+# Two PRs pushing at once will race on the same Postman collection.
 concurrency:
   group: raml-postman-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -18,12 +20,22 @@ permissions:
   contents: write        # to commit the regenerated artifact on main
   pull-requests: write   # to post the contract-diff comment
 
+env:
+  RAML_ROOT: src/main/resources/api/api.raml
+  ARTIFACT_DIR: .postman
+  POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+  POSTMAN_WORKSPACE_ID: ${{ vars.POSTMAN_WORKSPACE_ID }}
+  POSTMAN_PREVIEW_WORKSPACE_ID: ${{ vars.POSTMAN_PREVIEW_WORKSPACE_ID }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
 jobs:
+  # ── PR opened / updated: build a throwaway preview, never touch the
+  #    canonical collection from an unmerged branch. ─────────────────────
   preview:
-     if: github.event_name == 'pull_request' && github.event.action != 'closed'
-     runs-on: ubuntu-latest    
-     steps:
-      - uses: actions/checkout@v4
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0   # required: we resolve the base ref's RAML too
 
@@ -31,17 +43,17 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: tools/raml-postman/package-lock.json          
+          cache-dependency-path: tools/raml-postman/package-lock.json
 
       - run: npm ci
         working-directory: tools/raml-postman
 
       - name: Build preview collection
-        run: node tools/raml-postman/src/index.js
+        run: node tools/raml-postman/src/index.mjs
         env:
           MODE: preview
           BASE_REF: origin/${{ github.base_ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          FAIL_ON_BREAKING: 'false'   # flip to true to gate merges                  
+          FAIL_ON_BREAKING: 'false'   # flip to true to gate merges               
           
 
