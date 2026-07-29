@@ -1,9 +1,47 @@
-name: Hello
-on: push
+name: raml-postman
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'src/main/resources/api/**'
+      - 'tools/raml-postman/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/main/resources/api/**'
+
+concurrency:
+  group: raml-postman-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write        # to commit the regenerated artifact on main
+  pull-requests: write   # to post the contract-diff comment
+
 jobs:
-  greet:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Runner OS is $RUNNER_OS"
-      - run: pwd && ls -la
-      - run: node --version && java -version
+  preview:
+     if: github.event_name == 'pull_request' && github.event.action != 'closed'
+     runs-on: ubuntu-latest    
+     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # required: we resolve the base ref's RAML too
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: tools/raml-postman/package-lock.json
+
+      - run: npm ci
+        working-directory: tools/raml-postman
+
+      - name: Build preview collection
+        run: node tools/raml-postman/src/index.js
+        env:
+          MODE: preview
+          BASE_REF: origin/${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FAIL_ON_BREAKING: 'false'   # flip to true to gate merges                  
+          
+

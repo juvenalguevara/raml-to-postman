@@ -1,0 +1,21 @@
+#%RAML 1.0 Library
+types:
+  User:
+    type: object
+    properties:
+      id: 
+        type: integer
+        required: true
+        example: 101
+      firstName: 
+        type: string
+        required: true
+        example: "John"
+      lastName: 
+        type: string
+        required: true      
+        example: "Doe"  
+      email: 
+        type: string
+        pattern: ^.+@.+\..+$
+        example: "jonh.doe@example.com"

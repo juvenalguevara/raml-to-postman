@@ -1,0 +1,54 @@
+#%RAML 1.0
+title: User Management API
+version: v1
+baseUri: https://example.com{version}
+mediaType: application/json
+protocols: [ HTTPS ]
+
+uses:
+  manager: /dataTypes/request/User.raml
+
+/users:
+  get:
+    description: Retrieve a list of all users.
+    queryParameters:
+      role:
+        type: string
+        required: false
+        enum: [admin, member, guest]
+    responses:
+      200:
+        body:
+          type: manager.User[]
+
+  post:
+    description: Create a new user.
+    body:
+      type: manager.User
+    responses:
+      201:
+        body:
+          properties:
+            message: string
+            userId: integer
+          example:
+            message: "User successfully created."
+            userId: 103
+
+  /{userId}:
+    uriParameters:
+      userId:
+        type: integer
+        description: The unique identifier of the user.
+    get:
+      description: Get details of a specific user.
+      responses:
+        200:
+          body:
+            type: manager.User
+        404:
+          body:
+            properties:
+              error: string
+            example:
+              error: "User not found."
