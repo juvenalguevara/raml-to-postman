@@ -3,12 +3,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-import { parseRaml, renderOas30 } from './raml.mjs';
+import { parseRaml, renderOas30 } from './raml.mjs'; 
 
 const cfg = {
   ramlRoot: process.env.RAML_ROOT ?? 'src/main/resources/api/api.raml',
   mode: process.env.MODE ?? 'preview',      // preview | publish | cleanup
-
 };
 
 const repoRoot = process.cwd();
@@ -35,6 +34,7 @@ async function main() {
     return;
   }
   console.log(`Contract files touched:\n${touched.map((f) => `  ${f}`).join('\n')}`);
+}
 
 
 main().catch((e) => { console.error(e); process.exit(1); });
