@@ -42,16 +42,18 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/raml-postman/package-lock.json
 
-      - name: Debug paths
-        run: |
-          echo "--- workspace: $(pwd)"
-          ls -la
-          echo "--- package files on disk"
-          find . -name 'package*.json' -not -path './node_modules/*'
-          echo "--- package files tracked by git"
-          git ls-files '*package*.json'
-          echo "--- is it gitignored?"
-          git check-ignore -v '**/package-lock.json' || echo "not ignored"           
+      - run: npm ci
+        working-directory: tools/raml-postman
+
+      - name: Build preview collection
+        run: node tools/raml-postman/src/index.mjs
+        env:
+          MODE: preview
+          BASE_REF: origin/${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FAIL_ON_BREAKING: 'false'   # flip to true to gate merges        
           
 
